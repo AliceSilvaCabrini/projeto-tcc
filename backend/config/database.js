@@ -1,4 +1,4 @@
-// config/database.js (COM CAMINHOS LOCAIS DAS FOTOS)
+// config/database.js (VERSÃO FINAL COM CLIENTE DE TESTE)
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 
@@ -65,7 +65,6 @@ const db = new sqlite3.Database('./salao.db', (err) => {
  	});
 });
 
-// Função para popular dados iniciais
 function seedInitialData() {
  	// Adicionar um usuário admin se não existir
  	db.get(`SELECT COUNT(*) as count FROM usuarios WHERE email = 'admin@salao.com'`, (err, row) => {
@@ -82,16 +81,36 @@ function seedInitialData() {
  		}
  	});
 
+ 	// --- INÍCIO DA NOVA MUDANÇA ---
+ 	// Adicionar um usuário cliente de teste se não existir
+ 	db.get(`SELECT COUNT(*) as count FROM usuarios WHERE email = 'teste@teste.com'`, (err, row) => {
+ 		if (row.count === 0) {
+ 			// Vamos dar a ele uma senha padrão, ex: "123"
+ 			bcrypt.hash('123', 10, (err, hash) => {
+ 				if (err) return console.error("Erro ao gerar hash da senha do cliente teste:", err.message);
+ 				db.run(`INSERT INTO usuarios (nome, sobrenome, email, telefone, senha, role) VALUES (?, ?, ?, ?, ?, ?)`,
+ 					['Cliente', 'Teste', 'teste@teste.com', '44999999999', hash, 'cliente'],
+ 					function (err) {
+ 						if (err) return console.error("Erro ao inserir cliente teste:", err.message);
+ 						console.log('Usuário "Cliente Teste" inserido.');
+ 					});
+ 			});
+ 		}
+ 	});
+ 	// --- FIM DA NOVA MUDANÇA ---
+
  	// Inserir serviços se a tabela estiver vazia
  	db.get(`SELECT COUNT(*) as count FROM servicos`, (err, row) => {
  		if (row.count === 0) {
  			const stmt = db.prepare(`INSERT INTO servicos (nome, duracao, preco) VALUES (?, ?, ?)`);
- 			// --- MUDANÇA AQUI: "Corte Masculino" REMOVIDO ---
  			stmt.run('Corte Feminino', 60, 80.00);
  			stmt.run('Manicure', 45, 30.00);
  			stmt.run('Pedicure', 45, 35.00);
  			stmt.run('Coloração', 90, 120.00);
  			stmt.run('Escova', 40, 50.00);
+ 			stmt.run('Cílios', 60, 175.00);
+ 			stmt.run('Manutenção Cílios', 45, 60.00);
+ 			stmt.run('Sobrancelha', 30, 50.00);
  			stmt.finalize(() => {
  				console.log('Serviços iniciais inseridos.');
  				seedProfessionalsAndServices();
@@ -107,15 +126,9 @@ function seedProfessionalsAndServices() {
  	db.get(`SELECT COUNT(*) as count FROM profissionais`, (err, row) => {
  		if (row.count === 0) {
  			const stmt = db.prepare(`INSERT INTO profissionais (nome, foto) VALUES (?, ?)`);
- 			
- 			// --- MUDANÇA AQUI ---
- 			// Trocamos as URLs do Unsplash pelos caminhos locais
- 			// Removemos "Bruno Costa" e adicionamos "Mariana"
  			stmt.run('Ana Silva', '/fotos/ana.jpg');
  			stmt.run('Carla Souza', '/fotos/carla.jpg');
  			stmt.run('Mariana', '/fotos/mariana.jpg');
- 			// --- FIM DA MUDANÇA ---
- 			
  			stmt.finalize(() => {
  				console.log('Profissionais iniciais inseridos.');
  				associateProfessionalServices();
@@ -151,8 +164,6 @@ function associateProfessionalServices() {
  					if (escovaId) stmt.run(anaId, escovaId);
  				}
 
- 				// --- MUDANÇA AQUI: "Bruno Costa" REMOVIDO ---
-
  				// Carla Souza: Manicure, Pedicure
  				const carlaId = getProfessionalId('Carla Souza');
  				if (carlaId) {
@@ -162,9 +173,16 @@ function associateProfessionalServices() {
  					if (pedicureId) stmt.run(carlaId, pedicureId);
  				}
  				
- 				// (Você pode adicionar os serviços da Mariana aqui se quiser)
- 				// const marianaId = getProfessionalId('Mariana');
- 				// if (marianaId) { ... }
+ 				// Mariana: Cílios, Manutenção Cílios, Sobrancelha
+ 				const marianaId = getProfessionalId('Mariana');
+ 				if (marianaId) {
+ 					const ciliosId = getServiceId('Cílios');
+ 					const manutencaoId = getServiceId('Manutenção Cílios');
+ 					const sobrancelhaId = getServiceId('Sobrancelha');
+ 					if (ciliosId) stmt.run(marianaId, ciliosId);
+ 					if (manutencaoId) stmt.run(marianaId, manutencaoId);
+ 					if (sobrancelhaId) stmt.run(marianaId, sobrancelhaId);
+ 				}
  				
  				stmt.finalize(() => console.log('Associações de serviços a profissionais concluídas.'));
  			});
