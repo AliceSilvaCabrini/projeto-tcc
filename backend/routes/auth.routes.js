@@ -3,9 +3,8 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 
-// Define as rotas
+//definindo as rotas
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 
-// Exporta o roteador
 module.exports = router;

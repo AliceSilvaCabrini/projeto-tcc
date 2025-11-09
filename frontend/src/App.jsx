@@ -8,11 +8,14 @@ import AuthScreen from './screens/AuthScreen.jsx';
 import BookingProcess from './screens/BookingProcess.jsx';
 import AdminDashboard from './screens/AdminDashboard.jsx';
 import ClientDashboard from './screens/ClientDashboard.jsx'; 
+import RedefinirSenha from './screens/RedefinirSenha.jsx'; // ajuste o caminho conforme a pasta
+
 
 export default function App() {
  	const [token, setToken] = useState(null);
  	const [user, setUser] = useState(null);
  	const [loading, setLoading] = useState(true);
+	const [resetMode, setResetMode] = useState(false);
 
  	useEffect(() => {
  		try {
@@ -47,6 +50,8 @@ export default function App() {
  	let pageContent;
  	if (loading) {
  		pageContent = <div className="min-h-screen flex items-center justify-center text-gray-700">Carregando...</div>;
+	 } else if (resetMode) {
+    	pageContent = <RedefinirSenha onBack={() => setResetMode(false)} user={user} />; //novo
  	} else if (!token || !user) {
  		pageContent = <AuthScreen onLogin={handleLogin} />;
  	} else if (user.role === 'admin') {
